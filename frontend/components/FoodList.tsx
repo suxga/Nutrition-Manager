@@ -16,25 +16,21 @@ const FoodList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axios.defaults.withCredentials = true; // 認証情報を含める
-
-    const fetchFoods = async () => {
+    const fetchRecords = async () => {
       try {
-        const response = await axios.get<Food[]>('http://127.0.0.1:3000/api/foods', {
-          withCredentials: true,
+        const response = await axios.get('http://localhost:3000/api/records', {
+          withCredentials: true, // 認証情報を含める
         });
-        setFoods(response.data);
+        console.log('Fetched records:', response.data);
+        setFoods(response.data); // フードデータを状態に設定
       } catch (err) {
-        const errorMessage = axios.isAxiosError(err) && err.response
-          ? err.response.data
-          : '食品データの取得に失敗しました。';
-        setError(errorMessage);
-        console.error(err);
+        console.error('Error fetching records:', err);
+        setError('記録データの取得に失敗しました。');
       }
     };
-        
-    fetchFoods();
-  }, []);
+  
+    fetchRecords();
+  }, []);  
 
   return (
     <div>
