@@ -17,6 +17,16 @@ const NutritionTracker: React.FC = () => {
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0, dietaryfibers:0}); // 栄養素の合計
   const [error, setError] = useState<string | null>(null);
 
+  const fetchRecords = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/records');
+      console.log('Fetched records:', response.data);
+      setRecords(response.data);
+    } catch (error) {
+      console.error('Error fetching records:', error);
+    }
+  };
+
   // 食品を追加する関数
   const addFood = async () => {
     try {
@@ -43,6 +53,44 @@ const NutritionTracker: React.FC = () => {
     }
   };
 
+  const addRecord = async (foodId: number) => {
+    console.log('Attempting POST request:', {
+      url: 'http://localhost:3000/api/records',
+      body: { date: new Date().toISOString().split('T')[0], foodId },
+    });
+    
+    try {
+      const today = new Date().toISOString().split('T')[0]; // 現在の日付 (YYYY-MM-DD 形式)
+      console.log('Attempting to send POST request with:', { date: today, foodId });
+
+      const response = await axios.post(
+        'http://localhost:3000/api/records', // フルURLを指定
+        { date: today, foodId: foodId },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }, withCredentials: true } // Ensure this matches backend CORS settings
+      );
+  
+      console.log('Response from backend:', response.data);
+      alert('記録が追加されました');
+    } catch (error: any) {
+      if (error.response) {
+        // サーバーからのレスポンスがある場合
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+        console.error('Error headers:', error.response.headers);
+      } else if (error.request) {
+        // リクエストが送信されたが応答がない場合
+        console.error('Error request:', error.request);
+      } else {
+        // その他のエラー
+        console.error('Error message:', error.message);
+      }
+      alert('記録の追加に失敗しました');
+    }
+  };  
+  
   return (
     <div>
       <h1>栄養管理アプリ</h1>
@@ -74,17 +122,25 @@ const NutritionTracker: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {records.map((food, index) => (
-            <tr key={index}>
-              <td>{food.name}</td>
-              <td>{food.calories}</td>
-              <td>{food.protein}</td>
-              <td>{food.carbs}</td>
-              <td>{food.fats}</td>
-              <td>{food.dietaryfibers}</td>
-            </tr>
-          ))}
-        </tbody>
+  {records.map((food, index) => (
+    <tr key={index}>
+      <td>{food.name}</td>
+      <td>{food.calories}</td>
+      <td>{food.protein}</td>
+      <td>{food.carbs}</td>
+      <td>{food.fats}</td>
+      <td>{food.dietaryfibers}</td>
+      <td>
+      <button onClick={() => {
+  console.log('Food ID being passed:', food.id);
+  addRecord(food.id);
+}}>記録</button>
+
+      </td>
+    </tr>
+  ))}
+</tbody>
+
       </table>
 
       {/* 栄養素の合計 */}
