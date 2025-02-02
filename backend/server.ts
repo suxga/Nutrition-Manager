@@ -10,7 +10,7 @@ app.use((req, res, next) => {
   console.log(`[DEBUG] Incoming request: ${req.method} ${req.url}`);
   console.log(`[DEBUG] Headers:`, req.headers);
   console.log(`[DEBUG] Query Parameters:`, req.query);
-  res.header("Access-Control-Allow-Origin", "http://localhost:8080");
+  res.header("Access-Control-Allow-Origin", "http://localhost:3002");
     res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.header("Access-Control-Allow-Credentials", "true");
@@ -21,27 +21,30 @@ app.use((req, res, next) => {
     }
 });
 
-
 // CORS設定
 app.use(cors({
-  origin: '*', // 一時的に全てをパス
+  origin: '*',
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'], // 必要なヘッダーを許可
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 許可するHTTPメソッド
 }));
 
-app.options('*', cors()); // OPTIONSリクエストにCORS設定を適用
 app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8080'); // フロントエンドのURL
+  console.log('[DEBUG] OPTIONS request received:', {
+    headers: req.headers,
+    method: req.method,
+    url: req.url,
+  });
+
+  // CORS ヘッダーを設定
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3002'); // フロントエンドのURL
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // 許可するHTTPメソッド
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // 必要なヘッダーを明示
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // 必要なヘッダーを明示
   res.setHeader('Access-Control-Allow-Credentials', 'true'); // 認証情報の送信を許可
   res.sendStatus(204); // No Contentで応答
 });
 
-
 app.use(express.json());
-
 
 // 全食品データを取得
 app.get('/api/foods', async (req, res) => {
@@ -64,8 +67,7 @@ app.get('/api/records', async (req, res) => {
   console.log('[DEBUG] Incoming GET /api/records request');
   try {
     const recordsQuery = db('records')
-      .join('foods', 'records.food_id', '=', 'foods.id')
-      .select('records.date', 'foods.name', 'foods.calories', 'foods.protein', 'foods.carbs', 'foods.fats');
+      .join('foods', 'records.food_id', '=', 'foods.id');
 
     console.log('[DEBUG] SQL Query:', recordsQuery.toString()); // クエリを出力
 
@@ -107,6 +109,29 @@ app.post('/api/records', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+app.get('/api/records-by-date', async (req, res) => {
+  try {
+    const { date } = req.query; // クエリパラメータから日付を取得
+    const records = await db('records')
+      .join('foods', 'records.food_id', '=', 'foods.id')
+      .where('records.date', date) // 指定された日付でフィルタリング
+      console.log(req.query)
+    // 日付ごとにグループ化
+    const groupedRecords = records.reduce((acc: Record<string, any[]>, record) => {
+      const date = record.date;
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push({ name: record.name, calories: record.calories,  protein: record.protein, carbs: record.carbs, fats: record.fats, dietaryfibers: record.dietaryfibers});
+      return acc;
+    }, {});
+
+    res.json(groupedRecords);
+  } catch (error) {
+    console.error('[ERROR] Fetching records by date failed:', error);
+    res.status(500).json({ error: 'Failed to fetch records by date' });
+  }
+});
 
 // サーバー起動
 app.listen(3000, '0.0.0.0', () => {
@@ -130,4 +155,3 @@ db.raw('SELECT 1+1 AS result')
     console.error('[ERROR] Unhandled error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   });
-  
