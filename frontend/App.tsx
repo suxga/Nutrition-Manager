@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import NutritionTracker from './components/NutritionTracker';
+import CalendarUI from './components/CalendarUI';
 
 // Axiosの基本設定を変更
 axios.defaults.baseURL = 'http://localhost:3000';
@@ -27,6 +28,11 @@ const App: React.FC = () => {
     dietaryfibers: 0,
   });
 
+  const handleFoodAddition = () => {
+    console.log('Added food:', newFood);
+  };
+  
+
   const addFood = () => {
     axios
       .post('/api/foods', newFood)
@@ -44,9 +50,14 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <h1>Nutrition Manager</h1>
+       {/* 今日の食事記録と合計栄養素 */}
       <NutritionTracker />
-      <h2>食品を追加</h2>
+       {/* カレンダーUI */}
+       <div style={{ marginTop: '40px' }}>
+        <CalendarUI />
+      </div> 
+       {/* 食品を追加 */}
+       <h2 style={{ marginTop: '40px' }}>食品を追加</h2>
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
@@ -88,6 +99,15 @@ const App: React.FC = () => {
           value={newFood.fats}
           onChange={(e) =>
             setNewFood({ ...newFood, fats: parseFloat(e.target.value) })
+          }
+          style={{ marginRight: '10px' }}
+        />
+        <input
+          type="number"
+          placeholder="dietaryfibers"
+          value={newFood.dietaryfibers}
+          onChange={(e) =>
+            setNewFood({ ...newFood, dietaryfibers: parseFloat(e.target.value) })
           }
           style={{ marginRight: '10px' }}
         />
